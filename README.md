@@ -21,7 +21,7 @@ Schema field type supported:
 | facet |  Hierachical Facet|
 | bytes |Bytes (one per document)|
 
-## Nedd to know
+## Need to know
 
 * Up to now, one SearchEngine for one kind of data type, it's not the right way. Need to be changed.
 * Underground, this plugin build on 'static or shared native library of rust', it uses Dart FFI to call the rust code
@@ -47,10 +47,13 @@ engine.openOrCreate(_path, _schema);
 /// encode the data object to a json string
 final _doc = jsonEncode(dataObject);
 /// start to index and store the data
-engine.index(_doc);
+await engine.index(_doc);
 
 /// give the query keywords and the field which to search on 
-final res = await engine.search('关键字 关键词', ["content"], 1, 10);
+final res = await engine.search('关键字 关键词', ['content'], 1, 10);
+
+/// remove a specify document by giving a field of u64 and it's value
+await engine.deleteByU64('id', 141906710246850560);
 
 ```
 
