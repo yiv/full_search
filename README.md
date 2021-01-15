@@ -1,4 +1,4 @@
-# Full_search
+# Full Text Search
 
 This is a full text search Flutter plugin which build on Tantivy.
 
@@ -6,7 +6,7 @@ Tantivy is a full-text search engine library inspired by Apache Lucene and writt
 
 ## Schema
 
-A FieldType describes the type (text, u64) of a field as well as how it should be handled.
+The schema describes the type (string, text, u64) of a field as well as how it should be handled.
 
 Schema field type supported:
 
