@@ -102,6 +102,63 @@ class SearchEngine {
     return completer.future;
   }
 
+  /// remove a specify document by giving a field of u64 and it's value
+  Future<void> deleteByU64(String field, int id) {
+    final _field = Utf8.toUtf8(field);
+    final completer = Completer<bool>();
+    final sendPort = singleCompletePort(completer);
+
+    final res = native.se_delete_by_u64(sendPort.nativePort, _field, id);
+    if (res != 1) {
+      _throwError();
+    }
+    return completer.future;
+  }
+
+  /// remove a specify document by giving a field of string and it's value
+  Future<void> deleteByString(String field, String value) {
+    final _field = Utf8.toUtf8(field);
+    final _value = Utf8.toUtf8(value);
+    final completer = Completer<bool>();
+    final sendPort = singleCompletePort(completer);
+
+    final res = native.se_delete_by_str(sendPort.nativePort, _field, _value);
+    if (res != 1) {
+      _throwError();
+    }
+    return completer.future;
+  }
+
+
+  /// update a specify document by giving a field of string and it's value
+  Future<void> updateByString(String field, String value, String doc) {
+    final _field = Utf8.toUtf8(field);
+    final _value = Utf8.toUtf8(value);
+    final _doc = Utf8.toUtf8(doc);
+    final completer = Completer<bool>();
+    final sendPort = singleCompletePort(completer);
+
+    final res = native.se_update_by_str(sendPort.nativePort, _field, _value, _doc);
+    if (res != 1) {
+      _throwError();
+    }
+    return completer.future;
+  }
+
+  /// update a specify document by giving a field of string and it's value
+  Future<void> updateByU64(String field, int value, String doc) {
+    final _field = Utf8.toUtf8(field);
+    final _doc = Utf8.toUtf8(doc);
+    final completer = Completer<bool>();
+    final sendPort = singleCompletePort(completer);
+
+    final res = native.se_update_by_u64(sendPort.nativePort, _field, value, _doc);
+    if (res != 1) {
+      _throwError();
+    }
+    return completer.future;
+  }
+
 
   void _throwError() {
     final length = native.last_error_length();
