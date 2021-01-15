@@ -14,11 +14,17 @@ Schema field type supported:
 |:---|:---|
 | string |  String field type configuration|
 | text |  Unsigned 64-bits integers field type configuration |
-| u64 |  Signed 64-bits integers 64 field type configuratio|
-| i64 |  64-bits float 64 field type configuration|
-| date | Signed 64-bits Date 64 field type configuration|
+| u64 |  Unsigned 64-bits integers field type configuration|
+| i64 |  Signed 64-bits integers 64 field type configuration|
+| f64 |  64-bits float 64 field type configuration|
+| date | Signed 64-bits Date field type configuration|
 | facet |  Hierachical Facet|
 | bytes |Bytes (one per document)|
+
+## Nedd to know
+
+* Up to now, one SearchEngine for one kind of data type, it's not the right way. Need to be changed.
+* Underground, this plugin build on 'static or shared native library of rust', it uses Dart FFI to call the rust code
 
 ## Example
 
