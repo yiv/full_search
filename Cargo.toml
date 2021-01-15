@@ -1,0 +1,9 @@
+[workspace]
+members = ["native/*"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+debug = false
+opt-level = 'z'
+panic = 'abort'
