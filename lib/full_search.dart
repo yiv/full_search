@@ -10,7 +10,7 @@ class SearchEngine {
   /// setup the engine prerequisities
   static setup() {
     native.store_dart_post_cobject(NativeApi.postCObject);
-    print("Scrap Setup Done");
+    print("Setup Done");
   }
 
 
