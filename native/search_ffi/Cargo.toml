@@ -1,0 +1,30 @@
+[package]
+name = "search_ffi"
+version = "0.1.0"
+authors = ["yiv <yuefengshao@126.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "search_ffi"
+crate-type = ["rlib", "rlib"]
+
+
+
+[dependencies]
+ffi_helpers = "0.2"
+allo-isolate = "0.1.6"
+once_cell = "1.5.2"
+tokio = { version = "0.2", features = ["rt-threaded", "test-util", "macros"] }
+
+search = { path = "../search" }
+serde = { version = "1.0", features = ["derive"] }
+serde_derive = "1.0"
+serde_json = "1.0"
+anyhow = "1.0.37"
+
+[build-dependencies]
+cbindgen = "0.14.3"
+dart-bindgen = "0.1.7"
+
