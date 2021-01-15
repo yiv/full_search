@@ -13,7 +13,7 @@ Schema field type supported:
 | Field Type | Description |
 |:---|:---|
 | string |  String field type configuration|
-| text |  Unsigned 64-bits integers field type configuration |
+| text |  Text field type configuration |
 | u64 |  Unsigned 64-bits integers field type configuration|
 | i64 |  Signed 64-bits integers 64 field type configuration|
 | f64 |  64-bits float 64 field type configuration|
