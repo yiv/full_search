@@ -7,7 +7,7 @@ Tantivy is a full-text search engine library inspired by Apache Lucene and writt
 
 ## example 
 
-![](./example/example.png)
+![](https://github.com/yiv/full_search/blob/master/example/example.png)
 
 
 
