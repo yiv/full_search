@@ -20,6 +20,7 @@ use std::borrow::Borrow;
 
 #[macro_use]
 mod helper;
+
 use helper::*;
 
 mod demo;
@@ -184,20 +185,39 @@ pub extern "C" fn se_get_by_i64(port: i64, field: *const c_char, value: i64) -> 
 async fn test() {
     search::open("./db", demo::DEMO_SCHEMA).unwrap();
 
-    {
-        let now = std::time::Instant::now();
-        let data = serde_json::from_str::<Vec<demo::DemoMessage>>(demo::DEMO_DATA).unwrap();
-        for v in data {
-            let s = serde_json::to_string(&v).unwrap();
-            search::index(&s).await.unwrap()
-        }
-        println!("{}", now.elapsed().as_millis());
-    }
+    // {
+    //     let now = std::time::Instant::now();
+    //     let data = serde_json::from_str::<Vec<demo::DemoMessage>>(demo::DEMO_DATA).unwrap();
+    //     for v in data {
+    //         let s = serde_json::to_string(&v).unwrap();
+    //         search::index(&s).await.unwrap()
+    //     }
+    //     println!("{}", now.elapsed().as_millis());
+    // }
 
-    let res = search::search(r#"路痴"#, vec!["content".to_string()], 1, 10).await;
+    let res = search::search(r#"content:儿子 AND content:下落"#, vec!["content".to_string()], 1, 10).await.unwrap();
     // let res = search::search_field("路 痴", &vec!["content".to_string()], 1, 10).await.unwrap();
 
-    println!("{}", res.unwrap());
+    #[derive(Clone, Debug, Default, Serialize, Deserialize, )]
+    struct ResultItem {
+        channel_id: i64,
+        user_id: i64,
+        guild_id: i64,
+        message_id: i64,
+        content: String,
+        timestamp: String,
+    }
+    #[derive(Clone, Debug, Default, Serialize, Deserialize, )]
+    struct SearchResult {
+        result: ResultItem,
+        snippet: String,
+    }
+
+    let res = serde_json::from_str::<Vec<SearchResult>>(&res).unwrap();
+
+    for v in res {
+        println!("{} - {:?}", v.snippet, v.result);
+    }
 
     println!("hello");
 }
