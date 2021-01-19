@@ -23,7 +23,7 @@ Schema field type supported:
 
 ## Query Terms
 
-> All boolean operators like *AND*, *OR*, *TO* **MUST BE** in *UPPERCASE*
+> Operators like *AND*, *OR*, *TO* **MUST BE** in *UPPERCASE*
 
 * **simple terms**: "e.g.: Barack Obama are simply tokenized using tantivy's SimpleTokenizer, hence becoming ["barack", "obama"]. The terms are then searched within the default terms of the query parser.
 

@@ -195,7 +195,7 @@ async fn test() {
     //     println!("{}", now.elapsed().as_millis());
     // }
 
-    let res = search::search(r#"content:儿子 AND content:下落"#, vec!["content".to_string()], 1, 10).await.unwrap();
+    let res = search::search(r#"content:shock"#, vec!["content".to_string()], 1, 10).await.unwrap();
     // let res = search::search_field("路 痴", &vec!["content".to_string()], 1, 10).await.unwrap();
 
     #[derive(Clone, Debug, Default, Serialize, Deserialize, )]
