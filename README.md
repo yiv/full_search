@@ -55,6 +55,7 @@ Schema field type supported:
 
 * Up to now, one SearchEngine for one kind of data type, it's not the right way. Need to be changed.
 * Underground, this plugin build on 'static or shared native library of rust', it uses Dart FFI to call the rust code
+* Document can't be deleted by **text** field, please use **string**
 
 ## Example
 
@@ -83,6 +84,7 @@ await engine.index(_doc);
 final res = await engine.search('关键字 关键词', ['content'], 1, 10);
 
 /// remove a specify document by giving a field of u64 and it's value
+/// document can't be deleted by text field, please use string field
 await engine.deleteByU64('id', 141906710246850560);
 
 ```

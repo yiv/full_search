@@ -185,21 +185,28 @@ pub extern "C" fn se_get_by_i64(port: i64, field: *const c_char, value: i64) -> 
 async fn test() {
     search::open("./db", demo::DEMO_SCHEMA).unwrap();
 
-    // {
-    //     let now = std::time::Instant::now();
-    //     let data = serde_json::from_str::<Vec<demo::DemoMessage>>(demo::DEMO_DATA).unwrap();
-    //     for v in data {
-    //         let s = serde_json::to_string(&v).unwrap();
-    //         search::index(&s).await.unwrap()
-    //     }
-    //     println!("{}", now.elapsed().as_millis());
-    // }
+    {
+        // let now = std::time::Instant::now();
+        // let data = serde_json::from_str::<Vec<demo::DemoMessage>>(demo::DEMO_DATA).unwrap();
+        // for v in data {
+        //     let s = serde_json::to_string(&v).unwrap();
+        //     search::index(&s).await.unwrap()
+        // }
+        // println!("{}", now.elapsed().as_millis());
+    }
 
-    let res = search::search(r#"content:shock"#, vec!["content".to_string()], 1, 10).await.unwrap();
+    // let res = search::search(r#"content:儿子 AND message_id:[139259496311685120 TO 1392594963116851200}"#, vec!["content".to_string()], 1, 10).await.unwrap();
+    // let res = search::search(r#"message_id:141906710238461952"#, vec!["content".to_string(), "message_id".to_string(), "id".to_string()], 1, 10).await.unwrap();
+    // let res = search::search(r#"message_id:[5 TO 6]"#, vec!["content".to_string(), "message_id".to_string(), "id".to_string()], 1, 10).await.unwrap();
+    // let res = search::search(r#"(content:儿子 OR content:亲 ) AND message_id:[2 TO 8}"#, vec!["content".to_string(), "message_id".to_string(), "id".to_string()], 1, 10).await.unwrap();
+    // let res = search::search(r#"content:儿子 OR content:亲"#, vec!["content".to_string()], 1, 10).await.unwrap();
     // let res = search::search_field("路 痴", &vec!["content".to_string()], 1, 10).await.unwrap();
+    search::delete_by_str("id", "104").await.unwrap();
+    let res = search::search("104", vec!["id".to_string()], 1, 10).await.unwrap();
 
     #[derive(Clone, Debug, Default, Serialize, Deserialize, )]
     struct ResultItem {
+        id: String,
         channel_id: i64,
         user_id: i64,
         guild_id: i64,
@@ -215,9 +222,9 @@ async fn test() {
 
     let res = serde_json::from_str::<Vec<SearchResult>>(&res).unwrap();
 
-    for v in res {
+    for v in res.iter() {
         println!("{} - {:?}", v.snippet, v.result);
     }
 
-    println!("hello");
+    println!("found items: {}", res.len());
 }
