@@ -40,7 +40,8 @@ class _MyAppState extends State<MyApp> {
     final directory = await getApplicationDocumentsDirectory();
     _path = directory.path;
 
-    engine.openOrCreate(_path, _schema);
+    final res = engine.openOrCreate(_path, _schema);
+    print("openOrCreate result $res");
 
     var exists = await engine.exists();
     print('engine exists: $exists');

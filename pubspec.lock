@@ -67,6 +67,15 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  frusty_logger:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: a331223b8962eef953616f9d4ae3dd6fdcd4f089
+      url: "https://github.com/sunshine-protocol/frusty-logger.git"
+    source: git
+    version: "0.1.0"
   isolate:
     dependency: "direct main"
     description:

@@ -1,4 +1,4 @@
-use allo_isolate::{store_dart_post_cobject, Isolate};
+use allo_isolate::{ffi, Isolate};
 use anyhow::Error;
 use ffi_helpers::{null_pointer_check, NullPointer, Nullable};
 use tokio::runtime::Runtime;

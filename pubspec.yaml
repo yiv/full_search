@@ -13,10 +13,15 @@ dependencies:
     sdk: flutter
   ffi: ^0.1.3
   isolate: ^2.0.3
+  frusty_logger:
+    git:
+      url: https://github.com/sunshine-protocol/frusty-logger.git
+
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

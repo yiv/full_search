@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate log;
 
 use anyhow::{Result, Error};
 use tantivy::collector::TopDocs;
@@ -39,6 +41,7 @@ pub struct SearchEngine {
 
 impl SearchEngine {
     pub fn new(path: &str, schema: &str) -> Self {
+        debug!("new path={}, schema={}", path, schema);
         SearchEngine { path: path.to_string(), schema: schema.to_string(), index: None, index_reader: None, index_writer: None }
     }
 
@@ -48,7 +51,10 @@ impl SearchEngine {
             let index = Index::open_in_dir(&self.path).map_err(|err| { Error::msg(format!("{:?}", err)) })?;
             index
         } else {
-            let schema = schema_from_json(&self.schema)?;
+            let schema = schema_from_json(&self.schema).map_err(|err| {
+                debug!("{}", err.to_string());
+                err
+            })?;
             let index = Index::create_in_dir(&self.path, schema).map_err(|err| { Error::msg(format!("{:?}", err)) })?;
             index
         };
@@ -61,13 +67,22 @@ impl SearchEngine {
 
         self.index = Some(index);
 
-        self.init_reader()?;
-        self.init_writer()?;
+        self.init_reader().map_err(|err| {
+            debug!("{}", err.to_string());
+            err
+        })?;
+        self.init_writer().map_err(|err| {
+            debug!("{}", err.to_string());
+            err
+        })?;
         Ok(())
     }
     pub fn exists(&mut self) -> Result<bool> {
         let dir = tantivy::directory::MmapDirectory::open(&self.path).map_err(|err| { Error::msg(format!("{:?}", err)) })?;
-        if Index::exists(&dir)? {
+        if Index::exists(&dir).map_err(|err| {
+            debug!("{}", err.to_string());
+            err
+        })? {
             Ok(true)
         } else {
             Ok(false)
@@ -77,9 +92,12 @@ impl SearchEngine {
     fn init_writer(&mut self) -> Result<()> {
         if self.index_writer.is_none() {
             if self.index.is_none() {
-                self.open()?;
+                self.open().map_err(|err| {
+                    debug!("{}", err.to_string());
+                    err
+                })?;
             }
-            let writer = self.index.borrow_mut().as_mut().unwrap().writer(50_000_000).map_err(|err| { Error::msg(format!("{:?}", err)) })?;
+            let writer = self.index.borrow_mut().as_mut().ok_or(Error::msg("index not found"))?.writer(50_000_000).map_err(|err| { Error::msg(format!("{:?}", err)) })?;
             self.index_writer = Some(writer);
         }
         Ok(())
@@ -88,32 +106,35 @@ impl SearchEngine {
     fn init_reader(&mut self) -> Result<()> {
         if self.index_reader.is_none() {
             if self.index.is_none() {
-                self.open()?;
+                self.open().map_err(|err| {
+                    debug!("{}", err.to_string());
+                    err
+                })?;
             }
-            let reader = self.index.borrow().as_ref().unwrap().reader().map_err(|err| { Error::msg(format!("{:?}", err)) })?;
+            let reader = self.index.borrow().as_ref().ok_or(Error::msg("index not found"))?.reader().map_err(|err| { Error::msg(format!("{:?}", err)) })?;
             self.index_reader = Some(reader);
         }
         Ok(())
     }
 
     pub fn index(&mut self, doc: &str) -> Result<()> {
-        let mut writer = self.index_writer.borrow_mut().as_mut().unwrap();
-        let schema = self.index.borrow().as_ref().unwrap().schema();
+        let mut writer = self.index_writer.borrow_mut().as_mut().ok_or(Error::msg("writer not found"))?;
+        let schema = self.index.borrow().as_ref().ok_or(Error::msg("index not found"))?.schema();
         let doc = schema.parse_document(doc).map_err(|err| { Error::msg(format!("{:?}", err)) })?;
         writer.add_document(doc);
         writer.commit().map_err(|err| { Error::msg(format!("{:?}", err)) })?;
 
-        let reader = self.index_reader.borrow_mut().as_ref().unwrap();
+        let reader = self.index_reader.borrow_mut().as_ref().ok_or(Error::msg("reader not found"))?;
         reader.reload().map_err(|err| { Error::msg(format!("{:?}", err)) })?;
 
         Ok(())
     }
 
     pub fn get_by_term(&mut self, uni_key: &str, value: Value) -> Result<Option<String>> {
-        let reader = self.index_reader.borrow_mut().as_ref().unwrap();
+        let reader = self.index_reader.borrow_mut().as_ref().ok_or(Error::msg("reader not found"))?;
         let searcher = reader.searcher();
 
-        let schema = self.index.borrow().as_ref().unwrap().schema();
+        let schema = self.index.borrow().as_ref().ok_or(Error::msg("index not found"))?.schema();
         let field = if let Some(v) = schema.get_field(uni_key) {
             v
         } else {
@@ -163,7 +184,7 @@ impl SearchEngine {
     }
 
     fn delete(&mut self, uni_key: &str, value: Value) -> Result<()> {
-        let schema = self.index.borrow().as_ref().unwrap().schema();
+        let schema = self.index.borrow().as_ref().ok_or(Error::msg("index not found"))?.schema();
         if let Some(field) = schema.get_field(uni_key) {
             let entry = schema.get_field_entry(field);
             let field_type = entry.field_type();
@@ -181,9 +202,9 @@ impl SearchEngine {
                 }
             };
 
-            let reader = self.index_reader.borrow_mut().as_ref().unwrap();
+            let reader = self.index_reader.borrow_mut().as_ref().ok_or(Error::msg("reader not found"))?;
 
-            let mut writer = self.index_writer.borrow_mut().as_mut().unwrap();
+            let mut writer = self.index_writer.borrow_mut().as_mut().ok_or(Error::msg("writer not found"))?;
             let n = writer.delete_term(term);
             writer.commit().map_err(|err| { Error::msg(format!("{:?}", err)) })?;
             reader.reload().map_err(|err| { Error::msg(format!("{:?}", err)) })?;
@@ -194,10 +215,10 @@ impl SearchEngine {
 
     pub fn search(&mut self, query: &str, fields: Vec<String>, page_start: usize, page_size: usize) -> Result<String> {
         let page_start = if page_start != 0 { page_start - 1 } else { 0 };
-        let indexer = self.index.borrow().as_ref().unwrap();
-        let reader = self.index_reader.borrow_mut().as_ref().unwrap();
+        let indexer = self.index.borrow().as_ref().ok_or(Error::msg("index not found"))?;
+        let reader = self.index_reader.borrow_mut().as_ref().ok_or(Error::msg("reader not found"))?;
         let searcher = reader.searcher();
-        let schema = self.index.borrow().as_ref().unwrap().schema();
+        let schema = self.index.borrow().as_ref().ok_or(Error::msg("schema not found"))?.schema();
 
         let mut search_fields = vec![];
         for v in fields.iter() {
@@ -260,7 +281,10 @@ pub struct SearchResult {
 
 
 fn schema_from_json(schema: &str) -> Result<Schema> {
-    let h = serde_json::from_str::<HashMap<String, String>>(schema)?;
+    let h = serde_json::from_str::<HashMap<String, String>>(schema).map_err(|err|{
+        error!("schema_from_json schema={},  err: {}", schema, err.to_string());
+        err
+    })?;
     let mut schema_builder = Schema::builder();
     for (k, v) in h {
         match v.as_str() {
@@ -301,10 +325,14 @@ pub fn open(path: &str, schema: &str) -> Result<()> {
     //     return Err(Error::msg("At least one field must set as 'key' in schema"));
     // }
 
+
     let se = SE.get_or_init(|| {
         Mutex::new(SearchEngine::new(path, schema))
     });
-    SE.get().unwrap().lock().unwrap().open()?;
+    SE.get().unwrap().lock().unwrap().open().map_err(|err|{
+        error!("open path={}, schema={}, err: {}", path, schema, err.to_string());
+        err
+    })?;
     Ok(())
 }
 
@@ -314,7 +342,10 @@ pub async fn exists() -> Result<bool> {
 }
 
 pub async fn index(doc: &str) -> Result<()> {
-    SE.get().unwrap().lock().unwrap().index(doc)?;
+    SE.get().unwrap().lock().unwrap().index(doc).map_err(|err|{
+        error!("index err: {}", err.to_string());
+        err
+    })?;
     Ok(())
 }
 
@@ -324,44 +355,65 @@ pub async fn index(doc: &str) -> Result<()> {
 // }
 
 pub async fn search(query: &str, fields: Vec<String>, page_start: usize, page_size: usize) -> Result<String> {
-    let results = SE.get().unwrap().lock().unwrap().search(query, fields, page_start, page_size)?;
+    let results = SE.get().unwrap().lock().unwrap().search(query, fields, page_start, page_size).map_err(|err|{
+        error!("search query={},  err: {}", query,  err.to_string());
+        err
+    })?;
     Ok(results)
 }
 
 
 pub async fn update_by_u64(uni_key: &str, value: u64, new_doc: &str) -> Result<()> {
     let mut se = SE.get().unwrap().lock().unwrap();
-    se.delete(uni_key, Value::from(value))?;
+    se.delete(uni_key, Value::from(value)).map_err(|err|{
+        error!("update_by_u64 key={}, value={}, err: {}", uni_key, value, err.to_string());
+        err
+    })?;
     se.index(new_doc)?;
     Ok(())
 }
 
 pub async fn update_by_str(uni_key: &str, value: &str, new_doc: &str) -> Result<()> {
     let mut se = SE.get().unwrap().lock().unwrap();
-    se.delete(uni_key, Value::from(value))?;
+    se.delete(uni_key, Value::from(value)).map_err(|err|{
+        error!("update_by_str key={}, value={}, err: {}", uni_key, value, err.to_string());
+        err
+    })?;
     se.index(new_doc)?;
     Ok(())
 }
 
 pub async fn delete_by_u64(uni_key: &str, value: u64) -> Result<()> {
     let mut se = SE.get().unwrap().lock().unwrap();
-    se.delete(uni_key, Value::from(value))?;
+    se.delete(uni_key, Value::from(value)).map_err(|err|{
+        error!("delete_by_u64 key={}, value={}, err: {}", uni_key, value, err.to_string());
+        err
+    })?;
     Ok(())
 }
 
 pub async fn delete_by_str(uni_key: &str, value: &str) -> Result<()> {
     let mut se = SE.get().unwrap().lock().unwrap();
-    se.delete(uni_key, Value::from(value))?;
+    se.delete(uni_key, Value::from(value)).map_err(|err|{
+        error!("delete_by_str key={}, value={}, err: {}", uni_key, value, err.to_string());
+        err
+    })?;
     Ok(())
 }
 
 
 pub async fn get_by_term_u64(uni_key: &str, value: u64) -> Result<Option<String>> {
-    let x = SE.get().unwrap().lock().unwrap().get_by_term(uni_key, Value::from(value))?;
+    let x = SE.get().unwrap().lock().unwrap().get_by_term(uni_key, Value::from(value)).map_err(|err|{
+        error!("get_by_term_u64 key={}, value={}, err: {}", uni_key, value, err.to_string());
+        err
+    })?;
     Ok(x)
 }
 pub async fn get_by_term_i64(uni_key: &str, value: i64) -> Result<Option<String>> {
-    let x = SE.get().unwrap().lock().unwrap().get_by_term(uni_key, Value::from(value))?;
+    let x = SE.get().unwrap().lock().unwrap().get_by_term(uni_key, Value::from(value)).map_err(|err|{
+        error!("get_by_term_i64 key={}, value={}, err: {}", uni_key, value, err.to_string());
+        err
+    })?;
     Ok(x)
 }
 

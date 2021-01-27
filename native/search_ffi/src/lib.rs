@@ -1,6 +1,9 @@
 #![allow(clippy::missing_safety_doc, clippy::not_unsafe_ptr_arg_deref)]
 
 #[macro_use]
+extern crate log;
+
+#[macro_use]
 extern crate ffi_helpers;
 #[macro_use]
 extern crate serde_derive;
@@ -13,6 +16,7 @@ use std::{
 
 use allo_isolate::{store_dart_post_cobject, Isolate};
 use ffi_helpers::{null_pointer_check, update_last_error};
+use frusty_logger::{Config, FilterBuilder};
 use once_cell::sync::Lazy;
 use tokio::runtime::{Builder, Runtime};
 
@@ -35,6 +39,15 @@ pub static RUNTIME: Lazy<io::Result<Runtime>> = Lazy::new(|| {
         .build()
 });
 
+frusty_logger::include_ffi!(
+  with_config: Config::new(
+    log::Level::Debug,
+    FilterBuilder::new()
+    .parse("search_ffi,search")
+    .build()
+  )
+);
+
 #[no_mangle]
 pub extern "C" fn add(a: i64, b: i64) -> i64 {
     a + b
@@ -45,9 +58,13 @@ pub extern "C" fn se_open_or_create(path: *const c_char, schema: *const c_char) 
     let path = cstr!(path);
     let schema = cstr!(schema);
 
+    log::debug!("open path={}, schema={}", path, schema);
     match search::open(path, schema) {
         Ok(v) => 1,
-        Err(err) => last_err(err),
+        Err(err) => {
+            log::error!("{}", err.to_string());
+            last_err(err)
+        }
     }
 }
 
@@ -55,6 +72,7 @@ pub extern "C" fn se_open_or_create(path: *const c_char, schema: *const c_char) 
 pub extern "C" fn se_exists(port: i64) -> i32 {
     let rt = runtime!();
 
+    log::debug!("exists ");
     let task = search::exists();
     let t = Isolate::new(port).task(task);
     rt.spawn(t);
@@ -66,6 +84,7 @@ pub extern "C" fn se_index(port: i64, doc: *const c_char) -> i32 {
     let rt = runtime!();
     let doc = cstr!(doc);
 
+    log::debug!("index ");
     let task = search::index(doc);
     let t = Isolate::new(port).task(task);
     rt.spawn(t);
@@ -83,9 +102,12 @@ pub extern "C" fn se_search(
     let rt = runtime!();
     let query = cstr!(query);
     let fields = cstr!(fields);
+
+    log::debug!("search query={}, fields={} ", query, fields);
     let fields = match serde_json::from_str::<Vec<String>>(&fields) {
         Ok(v) => v,
         Err(err) => {
+            log::error!("{}", err.to_string());
             update_last_error(err);
             return 0;
         }
@@ -103,6 +125,8 @@ pub extern "C" fn se_delete_by_str(port: i64, field: *const c_char, value: *cons
     let field = cstr!(field);
     let value = cstr!(value);
 
+    log::debug!("delete_by_str field={}, value={} ", field, value);
+
     let task = search::delete_by_str(field, value);
     let t = Isolate::new(port).task(task);
     rt.spawn(t);
@@ -113,6 +137,8 @@ pub extern "C" fn se_delete_by_str(port: i64, field: *const c_char, value: *cons
 pub extern "C" fn se_delete_by_u64(port: i64, field: *const c_char, value: u64) -> i32 {
     let rt = runtime!();
     let field = cstr!(field);
+
+    log::debug!("delete_by_u64 field={}, value={} ", field, value);
 
     let task = search::delete_by_u64(field, value);
     let t = Isolate::new(port).task(task);
@@ -131,6 +157,8 @@ pub extern "C" fn se_update_by_str(
     let field = cstr!(field);
     let doc = cstr!(doc);
     let value = cstr!(value);
+
+    log::debug!("update_by_str field={}, value={} ", field, value);
 
     let task = search::update_by_str(field, value, doc);
 
@@ -202,9 +230,11 @@ async fn test() {
     // let res = search::search(r#"content:儿子 OR content:亲"#, vec!["content".to_string()], 1, 10).await.unwrap();
     // let res = search::search_field("路 痴", &vec!["content".to_string()], 1, 10).await.unwrap();
     search::delete_by_str("id", "104").await.unwrap();
-    let res = search::search("104", vec!["id".to_string()], 1, 10).await.unwrap();
+    let res = search::search("104", vec!["id".to_string()], 1, 10)
+        .await
+        .unwrap();
 
-    #[derive(Clone, Debug, Default, Serialize, Deserialize, )]
+    #[derive(Clone, Debug, Default, Serialize, Deserialize)]
     struct ResultItem {
         id: String,
         channel_id: i64,
@@ -214,7 +244,7 @@ async fn test() {
         content: String,
         timestamp: String,
     }
-    #[derive(Clone, Debug, Default, Serialize, Deserialize, )]
+    #[derive(Clone, Debug, Default, Serialize, Deserialize)]
     struct SearchResult {
         result: ResultItem,
         snippet: String,

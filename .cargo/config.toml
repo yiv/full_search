@@ -1,0 +1,11 @@
+[target.aarch64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,--hash-style=sysv"]
+
+[target.armv7-linux-androideabi]
+rustflags = ["-C", "link-arg=-Wl,--hash-style=sysv"]
+
+[target.i686-linux-android]
+rustflags = ["-C", "link-arg=-Wl,--hash-style=sysv"]
+
+[target.x86_64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,--hash-style=sysv"]
