@@ -1,3 +1,5 @@
+
+
 # Full Text Search
 
 This is a full text search Flutter plugin which build on Tantivy.
@@ -15,7 +17,7 @@ Schema field type supported:
 | string |  String field type configuration|
 | text |  Text field type configuration |
 | u64 |  Unsigned 64-bits integers field type configuration|
-| i64 |  Signed 64-bits integers 64 field type configuration|
+| i64 |  Signed 64-bits integer field type configuration|
 | f64 |  64-bits float 64 field type configuration|
 | date | Signed 64-bits Date field type configuration|
 | facet |  Hierachical Facet|
@@ -90,6 +92,3 @@ await engine.deleteByU64('id', 141906710246850560);
 ```
 
 ![](https://github.com/yiv/full_search/blob/master/example/example.png)
-
-
-
